@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+.env/
+.env
+
+# Dataset Files
+req/
+
+# Generated Reports
+*_report.md
+comparison_report.md
+feature_contribution_report.md
+behavior_alignment_report.md
+jd_alignment_report.md
+schema_validation_report.md
+weight_sensitivity_report.md
+integration_report.md
+ranking_findings.md
+real_candidate_audit.md
+before_after_report.md
+
+# Generated Text Files
+*.txt
+
+# Generated CSVs
+submission.csv
+
+# Parquet Files
+*.parquet
+
+# IDE
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
