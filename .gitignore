@@ -4,6 +4,15 @@ env/
 ENV/
 .venv
 
+# Pytest
+.pytest_cache/
+
+# Excel output
+*.xlsx
+
+ENV/
+.venv
+
 # Python
 __pycache__/
 *.py[cod]

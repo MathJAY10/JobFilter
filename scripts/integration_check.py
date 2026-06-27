@@ -56,7 +56,12 @@ def run_integration_check(filepath="top_10k_candidates.parquet"):
         for col in columns:
             # check for true None or pandas NaN
             val = c.get(col)
-            if val is None or (pd is not None and pd.isna(val)):
+            is_na = False
+            if val is None:
+                is_na = True
+            elif pd is not None and isinstance(val, float):
+                is_na = pd.isna(val)
+            if is_na:
                 nulls[col] += 1
     
     has_nulls = False

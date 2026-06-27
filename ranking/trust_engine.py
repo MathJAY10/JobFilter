@@ -15,7 +15,8 @@ class TrustResult:
     trust_flags: List[TrustFlag] = field(default_factory=list)
 
 def check_skill_inflation(candidate: Dict[str, Any], text: str) -> List[TrustFlag]:
-    years_exp = candidate.get("years_experience", 0)
+    profile = candidate.get("profile") or {}
+    years_exp = float(profile.get("years_of_experience") or candidate.get("years_experience") or 0.0)
     if not isinstance(years_exp, (int, float)):
         years_exp = 0.0
         
@@ -29,7 +30,8 @@ def check_skill_inflation(candidate: Dict[str, Any], text: str) -> List[TrustFla
 
 def check_title_progression(candidate: Dict[str, Any]) -> List[TrustFlag]:
     """Validates career progression and flags erratic jumps."""
-    years_exp = candidate.get("years_experience", 0)
+    profile = candidate.get("profile") or {}
+    years_exp = float(profile.get("years_of_experience") or candidate.get("years_experience") or 0.0)
     if not isinstance(years_exp, (int, float)):
         years_exp = 0.0
         
@@ -73,60 +75,83 @@ def check_langchain_only(text: str) -> List[TrustFlag]:
         return [TrustFlag("LangChain-only Profile without foundational IR skills.", "medium", 0.2)]
     return []
 
+def _parse_year(val) -> int:
+    """Parse a year from an int, ISO date string (YYYY-MM-DD), or year-only string."""
+    if val is None:
+        return 0
+    try:
+        return int(str(val)[:4])
+    except (ValueError, TypeError):
+        return 0
+
 def check_timeline_inconsistency(candidate: Dict[str, Any]) -> List[TrustFlag]:
+    """Checks for roles where end_date < start_date using ISO date strings."""
     career = candidate.get("career_history")
     if not isinstance(career, list):
         return []
-        
+
     flags = []
     for role in career:
-        if isinstance(role, dict):
-            start = role.get("start_year") or role.get("start_date")
-            end = role.get("end_year") or role.get("end_date")
-            
-            if isinstance(start, (int, str)) and isinstance(end, (int, str)):
-                try:
-                    s_val = int(str(start)[:4])
-                    e_val = int(str(end)[:4])
-                    if s_val > e_val:
-                        flags.append(TrustFlag("Timeline Inconsistency: End date before start date.", "high", 0.3))
-                        break
-                except ValueError:
-                    pass
+        if not isinstance(role, dict):
+            continue
+        # Schema fields: start_date / end_date (ISO strings). Fallback: start_year/end_year.
+        start = role.get("start_date") or role.get("start_year")
+        end   = role.get("end_date")   or role.get("end_year")
+        # Skip current roles (end_date is null)
+        if end is None or str(end).strip().lower() in ("", "null", "none", "present"):
+            continue
+        s_val = _parse_year(start)
+        e_val = _parse_year(end)
+        if s_val > 0 and e_val > 0 and s_val > e_val:
+            flags.append(TrustFlag("Timeline Inconsistency: End date before start date.", "high", 0.3))
+            break
     return flags
 
 def check_experience_consistency(candidate: Dict[str, Any]) -> List[TrustFlag]:
-    """Checks if total years of experience aligns with the sum of durations of individual roles."""
-    years_exp = candidate.get("years_experience", 0)
-    if not isinstance(years_exp, (int, float)):
+    """Checks if total years of experience aligns with sum of role durations.
+    Uses duration_months (always present in schema) as primary source,
+    falling back to start_date/end_date parsing.
+    """
+    profile = candidate.get("profile") or {}
+    years_exp = float(profile.get("years_of_experience") or candidate.get("years_experience") or 0.0)
+    if years_exp <= 0:
         return []
-        
+
     career = candidate.get("career_history")
-    if not isinstance(career, list):
+    if not isinstance(career, list) or len(career) == 0:
         return []
-        
-    total_role_years = 0
+
+    total_months = 0
     for role in career:
-        if isinstance(role, dict):
-            start = role.get("start_year")
-            end = role.get("end_year")
-            if isinstance(start, (int, str)) and isinstance(end, (int, str)):
-                try:
-                    s_val = int(str(start)[:4])
-                    e_val = int(str(end)[:4])
-                    if e_val >= s_val:
-                        total_role_years += (e_val - s_val)
-                except ValueError:
-                    pass
-                    
+        if not isinstance(role, dict):
+            continue
+        # Primary: duration_months (always present per schema)
+        dm = role.get("duration_months")
+        if isinstance(dm, (int, float)) and dm >= 0:
+            total_months += float(dm)
+        else:
+            # Fallback: derive from start_date / end_date
+            start = role.get("start_date") or role.get("start_year")
+            end   = role.get("end_date")   or role.get("end_year")
+            if end is None or str(end).strip().lower() in ("", "null", "none", "present"):
+                continue
+            s_val = _parse_year(start)
+            e_val = _parse_year(end)
+            if s_val > 0 and e_val >= s_val:
+                total_months += (e_val - s_val) * 12
+
+    total_role_years = total_months / 12.0
     if total_role_years > 0 and abs(years_exp - total_role_years) > 5:
-        return [TrustFlag("Experience Inconsistency: Stated years_experience vastly differs from career timeline.", "medium", 0.2)]
-        
+        return [TrustFlag(
+            f"Experience Inconsistency: Stated {years_exp:.1f} yrs vs career timeline {total_role_years:.1f} yrs.",
+            "medium", 0.2
+        )]
     return []
 
 def check_retrieval_vs_total_experience(candidate: Dict[str, Any], text: str) -> List[TrustFlag]:
     """Ensures a candidate doesn't claim massive retrieval experience if total experience is low."""
-    years_exp = candidate.get("years_experience", 0)
+    profile = candidate.get("profile") or {}
+    years_exp = float(profile.get("years_of_experience") or candidate.get("years_experience") or 0.0)
     if not isinstance(years_exp, (int, float)):
         years_exp = 0.0
         
