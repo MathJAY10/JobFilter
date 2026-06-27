@@ -1,0 +1,110 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Pytest
+.pytest_cache/
+
+# Excel output
+*.xlsx
+
+ENV/
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data Files (CSV, JSON, JSONL)
+*.csv
+*.jsonl
+*.json
+*.parquet
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS
+.env
+.env.local
+*.log
+
+# Temp files
+*.tmp
+.cache/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+.env/
+.env
+
+# Dataset Files
+req/
+
+# Generated Reports
+*_report.md
+comparison_report.md
+feature_contribution_report.md
+behavior_alignment_report.md
+jd_alignment_report.md
+schema_validation_report.md
+weight_sensitivity_report.md
+integration_report.md
+ranking_findings.md
+real_candidate_audit.md
+before_after_report.md
+
+# Generated Text Files
+*.txt
+
+# Generated CSVs
+submission.csv
+
+# Parquet Files
+*.parquet
+
+# IDE
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
